@@ -6,11 +6,11 @@ from torch.nn import functional as F
 batch_size = 32 # how many indpendent sequences will we process in parallel?
 block_size = 8 # what is the maximum context length for predictions?
 max_iters = 5000
-eval_interval = 300
+eval_interval = 500
 learning_rate = 1e-3
-device = 'cuda' if torch.cuda.is_available() else 'cpu' # ability to run on a GPu if you have it
+device = 'cuda' if torch.cuda.is_available() else 'cpu' # ability to run on a GPU if you have it
 eval_iters = 200
-n_embed =32 # number of embedding dimensions
+n_embed = 32 # number of embedding dimensions
 
 torch.manual_seed(1337) # make the code reproduceable when you run it again
 
@@ -38,7 +38,7 @@ val_data = torch.tensor(encode(test), dtype=torch.long)
 
 # loading the data
 def get_batch(split):
-    # generate a small batch of data of inputs and targets y
+    '''generate a small batch of data of inputs and targets y'''
     data = train_data if split =='train' else val_data
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([data[i:i+block_size] for i in ix])
@@ -76,7 +76,7 @@ class Head(nn.Module):
         q = self.query(x) # (B,T,C)
         # compute attention scores i.e. affinities
         wei = q @ k.transpose(-2,-1) * C**-0.5 # (B,T,C) @ (B,C,T) -> (B,T,T)
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B,T,T)
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B,T,T) ---> future does not communicate with the past
         wei = F.softmax(wei, dim=-1) # (B,T,T)
         # perform the weighted aggregation of the values
         v = self.value(x) # (B,T,C)
@@ -116,7 +116,8 @@ class BigramLanguageModel(nn.Module):
         # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
             # crop idx to the last block_size tokens
-            idx_cond = idx[:, -block_size]
+            idx_cond = idx[:, -block_size:]
+            # print('idx_cond: ',idx_cond)
             # get the predictions
             logits, loss = self(idx_cond)
             # focus only on the last time step
@@ -127,6 +128,8 @@ class BigramLanguageModel(nn.Module):
             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+            # print('idx_next: ',idx)
+
         return idx
     
 model = BigramLanguageModel()

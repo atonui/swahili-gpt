@@ -8,9 +8,9 @@ block_size = 8 # what is the maximum context length for predictions?
 max_iters = 3000
 eval_interval = 300
 learning_rate = 1e-2
-device = 'cuda' if torch.cuda.is_available() else 'cpu' # ability to run on a GPu if you have it
+device = 'cuda' if torch.cuda.is_available() else 'cpu' # ability to run on a GPU if you have it
 eval_iters = 200
-n_embed =32 # number of embedding dimensions
+n_embed = 29 # number of embedding dimensions
 
 torch.manual_seed(1337) # make the code reproduceable when you run it again
 
@@ -119,4 +119,6 @@ for iter in range(max_iters):
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
+print('----------------------------------------------------')
+print(context)
 print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
